@@ -36,8 +36,8 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.DOMAIN}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.DOMAIN}/`,
+      success_url: `www.thefrequencycode.ca/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `www.thefrequencycode.ca/`,
     });
 
     res.json({ id: session.id });
@@ -117,11 +117,11 @@ app.post(
 
 // === Route fallback ===
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.get("/success", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "success.html"));
+  res.sendFile(path.join(__dirname, "success.html"));
 });
 
 // === Start Server ===
