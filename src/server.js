@@ -42,9 +42,8 @@ app.post("/create-checkout-session", async (req, res) => {
 
     res.json({ id: session.id });
   } catch (err) {
-    console.error("❌ Stripe session creation failed:", err.message);
-    console.error("🔍 Full error:", err);
-    res.status(500).json({ error: "Failed to create Stripe session." });
+    console.error("Checkout Error:", err);
+    res.status(500).send("Failed to create Stripe session.");
   }
 });
 
@@ -108,10 +107,10 @@ app.post(
       });
 
       console.log("✅ Email sent.");
-    } else {
+    }
+    else {
       console.log(`Unhandled event type: ${event.type}`);
     }
-
     res.status(200).send("Received");
   }
 );
