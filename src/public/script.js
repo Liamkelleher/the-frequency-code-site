@@ -58,6 +58,17 @@ toggle.addEventListener("click", () => {
   nav.classList.toggle("active");
 });
 
+// Unmute video logic
+// const unmuteBtn = document.getElementById("unmute-btn");
+// const promoVideo = document.getElementById("promo-video");
+
+// unmuteBtn.addEventListener("click", () => {
+//   promoVideo.muted = false;
+//   promoVideo.volume = 1;
+//   promoVideo.play();
+//   unmuteBtn.style.display = "none";
+// });
+
 // Scroll-triggered flip effect for cards
 const cards = document.querySelectorAll(".card");
 
@@ -95,7 +106,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Initial check
   checkFloatingButtonVisibility();
+
+  // Event listeners
   window.addEventListener("scroll", checkFloatingButtonVisibility);
   window.addEventListener("resize", checkFloatingButtonVisibility);
 });
@@ -106,7 +120,13 @@ document.querySelectorAll(".faq-question").forEach((btn) => {
     const icon = btn.querySelector(".icon");
 
     item.classList.toggle("active");
-    icon.textContent = item.classList.contains("active") ? "−" : "+";
+
+    // Toggle icon manually for better control
+    if (item.classList.contains("active")) {
+      icon.textContent = "−";
+    } else {
+      icon.textContent = "+";
+    }
   });
 });
 
@@ -115,56 +135,21 @@ document.querySelectorAll(".footer-toggle").forEach((btn) => {
     const targetId = btn.dataset.target;
     const targetSection = document.getElementById(targetId);
 
+    // Hide all others
     document.querySelectorAll(".footer-section").forEach((sec) => {
       if (sec !== targetSection) sec.classList.remove("active");
     });
 
+    // Toggle visibility
     const isVisible = targetSection.classList.contains("active");
     targetSection.classList.toggle("active");
 
+    // Scroll into view AFTER it's visible
     if (!isVisible) {
+      // Delay scrolling slightly to allow layout to update
       setTimeout(() => {
         targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 50);
     }
   });
 });
-
-// Stripe Checkout Integration
-document
-  .getElementById("checkout-button")
-  .addEventListener("click", async () => {
-    try {
-      console.log("🟢 Checkout button clicked");
-      const res = await fetch("/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("❌ Server error:", text);
-        alert("Server error: " + text);
-        return;
-      }
-
-      const data = await res.json();
-      if (!data.id) {
-        console.error("❌ No session ID returned");
-        alert("Stripe session failed.");
-        return;
-      }
-
-      console.log("🧾 Session ID:", data.id);
-
-      const stripe = Stripe(
-        "pk_test_51RUUV4GKkazdgaPt68YjO0DunMAjoyLfF0prZhOI9WoDYEUHgs6SWxoOt2bVaZe5vh7pwWLoXE4MhA0uqoQ25ULc00uj2oFKW5"
-      );
-      await stripe.redirectToCheckout({ sessionId: data.id });
-    } catch (err) {
-      console.error("❌ Error redirecting to checkout:", err);
-      alert("Something went wrong while redirecting.");
-    }
-  });
