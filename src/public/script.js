@@ -153,3 +153,29 @@ document.querySelectorAll(".footer-toggle").forEach((btn) => {
     }
   });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+  const buyNowBtn = document.getElementById("checkout-button");
+  if (buyNowBtn) {
+    buyNowBtn.addEventListener("click", async () => {
+      try {
+        console.log("🟢 Initiating checkout...");
+        const res = await fetch("/create-checkout-session", {
+          method: "POST",
+        });
+
+        const data = await res.json();
+        if (data.url) {
+          console.log("➡️ Redirecting to Stripe Checkout");
+          window.location.href = data.url;
+        } else {
+          console.error("❌ Failed to receive checkout URL");
+          alert("Unable to start checkout session.");
+        }
+      } catch (err) {
+        console.error("❌ Checkout error:", err);
+        alert("An error occurred. Please try again.");
+      }
+    });
+  }
+});
