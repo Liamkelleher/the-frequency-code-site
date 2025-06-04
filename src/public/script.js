@@ -157,12 +157,21 @@ document.querySelectorAll(".footer-toggle").forEach((btn) => {
 document
   .getElementById("checkout-button")
   .addEventListener("click", async () => {
-    const res = await fetch("/create-checkout-session", {
-      method: "POST",
-    });
+    try {
+      console.log("🟢 Checkout button clicked");
+      const res = await fetch("/create-checkout-session", {
+        method: "POST",
+      });
 
-    const data = await res.json();
+      const data = await res.json();
+      console.log("🧾 Session ID:", data.id);
 
-    const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-    await stripe.redirectToCheckout({ sessionId: data.id });
+      const stripe = Stripe(
+        "pk_test_51RUUV4GKkazdgaPt68YjO0DunMAjoyLfF0prZhOI9WoDYEUHgs6SWxoOt2bVaZe5vh7pwWLoXE4MhA0uqoQ25ULc00uj2oFKW5"
+      );
+      await stripe.redirectToCheckout({ sessionId: data.id });
+    } catch (err) {
+      console.error("❌ Error redirecting to checkout:", err);
+      alert("Something went wrong.");
+    }
   });
