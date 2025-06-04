@@ -153,3 +153,16 @@ document.querySelectorAll(".footer-toggle").forEach((btn) => {
     }
   });
 });
+
+document
+  .getElementById("checkout-button")
+  .addEventListener("click", async () => {
+    const res = await fetch("/create-checkout-session", {
+      method: "POST",
+    });
+
+    const data = await res.json();
+
+    const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+    await stripe.redirectToCheckout({ sessionId: data.id });
+  });
