@@ -50,34 +50,45 @@ app.post("/create-checkout-session", async (req, res) => {
 });
 
 // === Stripe Webhook ===
-app.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req, res) => {
-  let event;
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    let event;
 
-  try {
-    const signature = req.headers["stripe-signature"];
-    event = stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
-  } catch (err) {
-    console.error("Webhook signature error:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
+    try {
+      if (endpointSecret) {
+        const signature = req.headers["stripe-signature"];
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          signature,
+          endpointSecret
+        );
+      } else {
+        event = JSON.parse(req.body);
+      }
+    } catch (err) {
+      console.error("Webhook signature error:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-    const email = session.customer_details.email;
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const email = session.customer_details.email;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
 
-    await transporter.sendMail({
-      from: `"The Frequency Code - LK Socials" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "📚 Your Frequency Code Bundle",
-      html: `
+      await transporter.sendMail({
+        from: `"The Frequency Code - LK Socials" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "📚 Your Frequency Code Bundle",
+        html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
           <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
             <h2 style="color: #222;">✅ Thank you for your purchase!</h2>
@@ -94,14 +105,16 @@ app.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req, r
             <p style="font-size: 13px; color: #999;">Need help? Just reply to this email or contact us at <strong>lksocialgroup@gmail.com</strong></p>
           </div>
         </div>
-      `,
-    });
+        `,
+      });
 
-    console.log("✅ Email sent to:", email);
+      console.log("✅ Email sent.");
+    } else {
+      console.log(`Unhandled event type: ${event.type}`);
+    }
+    res.status(200).send("Received");
   }
-
-  res.status(200).send("Received");
-});
+);
 
 // === Success Route ===
 app.get("/success", (req, res) => {
