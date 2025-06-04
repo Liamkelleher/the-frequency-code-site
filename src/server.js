@@ -36,8 +36,8 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `www.thefrequencycode.ca/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `www.thefrequencycode.ca/`,
+      success_url: `${process.env.DOMAIN}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.DOMAIN}/`,
     });
 
     res.json({ id: session.id });
