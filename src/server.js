@@ -106,7 +106,9 @@ app.post(
         `,
       });
 
-      console.log("✅ Email sent to:", email);
+      console.log("✅ Email sent.");
+    } else {
+      console.log(`Unhandled event type: ${event.type}`);
     }
 
     res.status(200).send("Received");
@@ -115,11 +117,11 @@ app.post(
 
 // === Route fallback ===
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.get("/success", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/success.html"));
+  res.sendFile(path.join(__dirname, "success.html"));
 });
 
 // === Start Server ===
