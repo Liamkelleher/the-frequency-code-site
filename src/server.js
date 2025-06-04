@@ -43,7 +43,7 @@ app.post("/create-checkout-session", async (req, res) => {
     res.json({ id: session.id });
   } catch (err) {
     console.error("Checkout Error:", err);
-    res.status(500).send("Failed to create Stripe session.");
+    res.status(500).json({ error: "Failed to create Stripe session." });
   }
 });
 
