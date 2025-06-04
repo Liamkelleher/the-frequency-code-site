@@ -1,17 +1,19 @@
+// === server.js ===
+require("dotenv").config();
 const express = require("express");
 const Stripe = require("stripe");
 const nodemailer = require("nodemailer");
 const path = require("path");
-require("dotenv").config();
+const bodyParser = require("body-parser");
 
 const app = express();
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// === Serve static files ===
+// Serve static files from /public
 app.use(express.static(path.join(__dirname, "public")));
 
-// === Use express.json except for Stripe Webhook ===
+// Use express.json() except for Stripe Webhook
 app.use((req, res, next) => {
   if (req.originalUrl === "/webhook") {
     next();
@@ -20,7 +22,7 @@ app.use((req, res, next) => {
   }
 });
 
-// === Create Stripe Checkout Session ===
+// === Checkout Session Endpoint ===
 app.post("/create-checkout-session", async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
@@ -36,57 +38,46 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.DOMAIN}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.DOMAIN}/`,
+      success_url: `${process.env.DOMAIN}/success.html`,
+      cancel_url: `${process.env.DOMAIN}/#buy`,
     });
 
-    res.json({ id: session.id });
+    res.json({ url: session.url });
   } catch (err) {
-    console.error("Checkout Error:", err);
-    res.status(500).send("Failed to create Stripe session.");
+    console.error("❌ Stripe session creation failed:", err.message);
+    res.status(500).json({ error: "Failed to create Stripe session." });
   }
 });
 
 // === Stripe Webhook ===
-app.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-    let event;
+app.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req, res) => {
+  let event;
 
-    try {
-      if (endpointSecret) {
-        const signature = req.headers["stripe-signature"];
-        event = stripe.webhooks.constructEvent(
-          req.body,
-          signature,
-          endpointSecret
-        );
-      } else {
-        event = JSON.parse(req.body);
-      }
-    } catch (err) {
-      console.error("Webhook signature error:", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+  try {
+    const signature = req.headers["stripe-signature"];
+    event = stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
+  } catch (err) {
+    console.error("Webhook signature error:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const email = session.customer_details.email;
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    const email = session.customer_details.email;
 
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-      await transporter.sendMail({
-        from: `"The Frequency Code - LK Socials" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: "📚 Your Frequency Code Bundle",
-        html: `
+    await transporter.sendMail({
+      from: `"The Frequency Code - LK Socials" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "📚 Your Frequency Code Bundle",
+      html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
           <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
             <h2 style="color: #222;">✅ Thank you for your purchase!</h2>
@@ -103,29 +94,26 @@ app.post(
             <p style="font-size: 13px; color: #999;">Need help? Just reply to this email or contact us at <strong>lksocialgroup@gmail.com</strong></p>
           </div>
         </div>
-        `,
-      });
+      `,
+    });
 
-      console.log("✅ Email sent.");
-    }
-    else {
-      console.log(`Unhandled event type: ${event.type}`);
-    }
-    res.status(200).send("Received");
+    console.log("✅ Email sent to:", email);
   }
-);
 
-// === Route fallback ===
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+  res.status(200).send("Received");
 });
 
+// === Success Route ===
 app.get("/success", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/success.html"));
+  res.sendFile(path.join(__dirname, "public", "success.html"));
 });
 
-// === Start Server ===
+// === Root Route ===
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
